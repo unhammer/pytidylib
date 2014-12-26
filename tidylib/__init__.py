@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 import ctypes
+import ctypes.util
 import threading
 import platform
 from tidylib.sink import create_sink, destroy_sink
@@ -28,8 +29,7 @@ __all__ = ['tidy_document', 'tidy_fragment', 'release_tidy_doc']
 # -------------------------------------------------------------------------- #
 # Constants
 
-LIB_NAMES = ['libtidy', 'libtidy.so', 'libtidy-0.99.so.0', 'cygtidy-0-99-0',
-             'tidylib', 'libtidy.dylib', 'tidy']
+LIB_NAMES = ['libtidy', 'cygtidy-0-99-0', 'tidylib', 'tidy']
 ENOMEM = -12
 BASE_OPTIONS = {
     "indent": 1,           # Pretty; not too much of a performance hit
@@ -58,11 +58,13 @@ else:
     load_library = ctypes.cdll.LoadLibrary
 
 for name in LIB_NAMES:
-    try:
-        tidy = load_library(name)
-        break
-    except OSError:
-        pass
+    path = ctypes.util.find_library(name)
+    if path is not None:
+        try:
+            tidy = load_library(path)
+            break
+        except OSError:
+            pass
 
 if tidy is None:
     raise OSError("Could not load libtidy using any of these names: %s" % (",".join(LIB_NAMES)))
